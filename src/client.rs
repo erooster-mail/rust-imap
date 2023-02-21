@@ -141,10 +141,9 @@ fn validate_sequence_set(
 pub struct Session<T: Read + Write> {
     conn: Connection<T>,
     pub(crate) unsolicited_responses_tx: mpsc::SyncSender<UnsolicitedResponse>,
-
-    /// Server responses that are not related to the current command. See also the note on
-    /// [unilateral server responses in RFC 3501](https://tools.ietf.org/html/rfc3501#section-7).
-    pub unsolicited_responses: mpsc::Receiver<UnsolicitedResponse>,
+    ///// Server responses that are not related to the current command. See also the note on
+    ///// [unilateral server responses in RFC 3501](https://tools.ietf.org/html/rfc3501#section-7).
+    //pub unsolicited_responses: mpsc::Receiver<UnsolicitedResponse>,
 }
 
 /// An (unauthenticated) handle to talk to an IMAP server. This is what you get when first
@@ -504,7 +503,7 @@ impl<T: Read + Write> Session<T> {
         let (tx, rx) = mpsc::sync_channel(BUFFER_SIZE);
         Session {
             conn,
-            unsolicited_responses: rx,
+            //unsolicited_responses: rx,
             unsolicited_responses_tx: tx,
         }
     }
