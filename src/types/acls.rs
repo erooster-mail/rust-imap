@@ -117,7 +117,7 @@ impl AclResponse {
     /// Parse the given input into a [`Acl`] response.
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         AclResponseTryBuilder {
             data: owned,
@@ -200,7 +200,7 @@ impl ListRightsResponse {
     /// Parse the given input into a [`ListRights`] response.
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         ListRightsResponseTryBuilder {
             data: owned,
@@ -280,7 +280,7 @@ impl MyRightsResponse {
     /// Parse the given input into a [`MyRights`] response.
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         MyRightsResponseTryBuilder {
             data: owned,

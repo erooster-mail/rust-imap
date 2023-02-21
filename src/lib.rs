@@ -97,3 +97,5 @@ pub mod extensions;
 
 #[cfg(test)]
 mod mock_stream;
+
+pub(crate) const BUFFER_SIZE: usize = 4096;

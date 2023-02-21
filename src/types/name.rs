@@ -20,7 +20,7 @@ impl Names {
     /// Parse one or more [`Name`] from a response buffer
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         NamesTryBuilder {
             data: owned,

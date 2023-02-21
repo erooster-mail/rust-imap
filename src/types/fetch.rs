@@ -28,7 +28,7 @@ impl Fetches {
     /// Parse one or more [`Fetch`] responses from a response buffer.
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         FetchesTryBuilder {
             data: owned,

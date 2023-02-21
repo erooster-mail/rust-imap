@@ -27,7 +27,7 @@ impl ExtendedNames {
     /// Parse one or more LIST-STATUS responses from a response buffer
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> core::result::Result<Self, Error> {
         ExtendedNamesTryBuilder {
             data: owned,
@@ -159,6 +159,8 @@ impl<T: Read + Write> Session<T> {
 mod tests {
     use imap_proto::NameAttribute;
 
+    use crate::BUFFER_SIZE;
+
     use super::*;
 
     #[test]
@@ -171,7 +173,7 @@ mod tests {
                     * LIST (\\UnMarked) \".\" feeds\r\n\
                     * LIST () \".\" feeds.test\r\n\
                     * STATUS feeds.test (HIGHESTMODSEQ 757)\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let fetches = ExtendedNames::parse(lines.to_vec(), &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         assert!(!fetches.is_empty());

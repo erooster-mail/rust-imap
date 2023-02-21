@@ -95,7 +95,7 @@ impl QuotaResponse {
     /// Parse the [`Quota`] response from a response buffer.
     pub fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         QuotaResponseTryBuilder {
             data: owned,
@@ -190,7 +190,7 @@ impl QuotaRootResponse {
     /// Parse the [`QuotaRoot`] response from a response buffer.
     pub fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         QuotaRootResponseTryBuilder {
             data: owned,

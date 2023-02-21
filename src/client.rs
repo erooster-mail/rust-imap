@@ -8,6 +8,8 @@ use std::ops::{Deref, DerefMut};
 use std::str;
 use std::sync::mpsc;
 
+use crate::BUFFER_SIZE;
+
 use super::authenticator::Authenticator;
 use super::error::{Bad, Bye, Error, No, ParseError, Result, ValidateError};
 use super::extensions;
@@ -138,7 +140,7 @@ fn validate_sequence_set(
 #[derive(Debug)]
 pub struct Session<T: Read + Write> {
     conn: Connection<T>,
-    pub(crate) unsolicited_responses_tx: mpsc::Sender<UnsolicitedResponse>,
+    pub(crate) unsolicited_responses_tx: mpsc::SyncSender<UnsolicitedResponse>,
 
     /// Server responses that are not related to the current command. See also the note on
     /// [unilateral server responses in RFC 3501](https://tools.ietf.org/html/rfc3501#section-7).
@@ -499,7 +501,7 @@ impl<T: Read + Write> Client<T> {
 impl<T: Read + Write> Session<T> {
     // not public, just to avoid duplicating the channel creation code
     fn new(conn: Connection<T>) -> Self {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::sync_channel(BUFFER_SIZE);
         Session {
             conn,
             unsolicited_responses: rx,

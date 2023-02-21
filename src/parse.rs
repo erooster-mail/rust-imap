@@ -37,7 +37,7 @@ pub(crate) enum MapOrNot<'a, T> {
 pub(crate) fn parse_many_into<'input, T, F>(
     input: &'input [u8],
     into: &mut impl Extend<T>,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     mut map: F,
 ) -> Result<()>
 where
@@ -79,7 +79,7 @@ pub(crate) fn parse_many_into2<'input, T, U, F, IU, IT>(
     input: &'input [u8],
     into1: &mut IT,
     into2: &mut IU,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     mut map: F,
 ) -> Result<()>
 where
@@ -120,7 +120,7 @@ where
 fn parse_until_done_internal<'input, T, F>(
     input: &'input [u8],
     optional: bool,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     map: F,
 ) -> Result<Option<T>>
 where
@@ -143,7 +143,7 @@ where
 /// If more than one `T` are found then [`Error::Parse`] is returned
 pub(crate) fn parse_until_done_optional<'input, T, F>(
     input: &'input [u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     map: F,
 ) -> Result<Option<T>>
 where
@@ -158,7 +158,7 @@ where
 /// If zero or more than one `T` are found then [`Error::Parse`] is returned.
 pub(crate) fn parse_until_done<'input, T, F>(
     input: &'input [u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     map: F,
 ) -> Result<T>
 where
@@ -171,7 +171,7 @@ where
 
 pub fn parse_expunge(
     lines: Vec<u8>,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Deleted> {
     let mut lines: &[u8] = &lines;
     let mut expunged = Vec::new();
@@ -224,7 +224,7 @@ pub fn parse_expunge(
 
 pub fn parse_append(
     mut lines: &[u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Appended> {
     let mut appended = Appended::default();
 
@@ -258,7 +258,7 @@ pub fn parse_append(
 
 pub fn parse_noop(
     lines: Vec<u8>,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<()> {
     let mut lines: &[u8] = &lines;
 
@@ -283,7 +283,7 @@ pub fn parse_noop(
 
 pub fn parse_mailbox(
     mut lines: &[u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Mailbox> {
     let mut mailbox = Mailbox::default();
 
@@ -373,7 +373,7 @@ pub fn parse_mailbox(
 pub fn parse_status(
     mut lines: &[u8],
     mailbox_name: &str,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Mailbox> {
     let mut mailbox = Mailbox::default();
     let mut got_anything = false;
@@ -419,7 +419,7 @@ pub fn parse_status(
 
 fn parse_ids_with<T: Extend<u32>>(
     lines: &[u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     mut collection: T,
 ) -> Result<T> {
     let mut lines = lines;
@@ -452,14 +452,14 @@ fn parse_ids_with<T: Extend<u32>>(
 
 pub fn parse_id_set(
     lines: &[u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<HashSet<u32>> {
     parse_ids_with(lines, unsolicited, HashSet::new())
 }
 
 pub fn parse_id_seq(
     lines: &[u8],
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Vec<u32>> {
     parse_ids_with(lines, unsolicited, Vec::new())
 }
@@ -484,7 +484,7 @@ pub fn parse_idle(lines: &[u8]) -> (&[u8], Option<Result<UnsolicitedResponse>>) 
 // Returns `None` if the response was handled, `Some(res)` if not.
 pub(crate) fn try_handle_unilateral<'a>(
     res: Response<'a>,
-    unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Option<Response<'a>> {
     match UnsolicitedResponse::try_from(res) {
         Ok(response) => {
@@ -497,6 +497,8 @@ pub(crate) fn try_handle_unilateral<'a>(
 
 #[cfg(test)]
 mod tests {
+    use crate::BUFFER_SIZE;
+
     use super::*;
     use imap_proto::types::*;
     use std::borrow::Cow;
@@ -510,7 +512,7 @@ mod tests {
             Capability::Atom(Cow::Borrowed("LOGINDISABLED")),
         ];
         let lines = b"* CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI LOGINDISABLED\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let capabilities = Capabilities::parse(lines.to_vec(), &mut send).unwrap();
         // shouldn't be any unexpected responses parsed
         assert!(recv.try_recv().is_err());
@@ -528,7 +530,7 @@ mod tests {
             Capability::Atom(Cow::Borrowed("STARTTLS")),
         ];
         let lines = b"* CAPABILITY IMAP4REV1 STARTTLS\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let capabilities = Capabilities::parse(lines.to_vec(), &mut send).unwrap();
         // shouldn't be any unexpected responses parsed
         assert!(recv.try_recv().is_err());
@@ -541,7 +543,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn parse_capability_invalid_test() {
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let lines = b"* JUNK IMAP4rev1 STARTTLS AUTH=GSSAPI LOGINDISABLED\r\n";
         Capabilities::parse(lines.to_vec(), &mut send).unwrap();
         assert!(recv.try_recv().is_err());
@@ -550,7 +552,7 @@ mod tests {
     #[test]
     fn parse_names_test() {
         let lines = b"* LIST (\\HasNoChildren) \".\" \"INBOX\"\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let names = Names::parse(lines.to_vec(), &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         assert_eq!(names.len(), 1);
@@ -566,7 +568,7 @@ mod tests {
     #[test]
     fn parse_fetches_empty() {
         let lines = b"";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let fetches = Fetches::parse(lines.to_vec(), &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         assert!(fetches.is_empty());
@@ -577,7 +579,7 @@ mod tests {
         let lines = b"\
                     * 24 FETCH (FLAGS (\\Seen) UID 4827943)\r\n\
                     * 25 FETCH (FLAGS (\\Seen))\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let fetches = Fetches::parse(lines.to_vec(), &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         assert_eq!(fetches.len(), 2);
@@ -601,7 +603,7 @@ mod tests {
         let lines = b"\
             * 37 FETCH (UID 74)\r\n\
             * 1 RECENT\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let fetches = Fetches::parse(lines.to_vec(), &mut send).unwrap();
         assert_eq!(recv.try_recv(), Ok(UnsolicitedResponse::Recent(1)));
         assert_eq!(fetches.len(), 1);
@@ -618,7 +620,7 @@ mod tests {
         let lines = b"\
             * OK Searched 91% of the mailbox, ETA 0:01\r\n\
             * 37 FETCH (UID 74)\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let fetches = Fetches::parse(lines.to_vec(), &mut send).unwrap();
         assert_eq!(
             recv.try_recv(),
@@ -638,7 +640,7 @@ mod tests {
         let lines = b"\
                     * LIST (\\HasNoChildren) \".\" \"INBOX\"\r\n\
                     * 4 EXPUNGE\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let names = Names::parse(lines.to_vec(), &mut send).unwrap();
 
         assert_eq!(recv.try_recv().unwrap(), UnsolicitedResponse::Expunge(4));
@@ -665,7 +667,7 @@ mod tests {
                     * CAPABILITY IMAP4rev1 STARTTLS AUTH=GSSAPI LOGINDISABLED\r\n\
                     * STATUS dev.github (MESSAGES 10 UIDNEXT 11 UIDVALIDITY 1408806928 UNSEEN 0)\r\n\
                     * 4 EXISTS\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let capabilities = Capabilities::parse(lines.to_vec(), &mut send).unwrap();
 
         assert_eq!(capabilities.len(), 4);
@@ -694,7 +696,7 @@ mod tests {
             * SEARCH 23 42 4711\r\n\
             * 1 RECENT\r\n\
             * STATUS INBOX (MESSAGES 10 UIDNEXT 11 UIDVALIDITY 1408806928 UNSEEN 0)\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let ids = parse_id_set(lines, &mut send).unwrap();
 
         assert_eq!(ids, [23, 42, 4711].iter().cloned().collect());
@@ -718,7 +720,7 @@ mod tests {
     fn parse_ids_test() {
         let lines = b"* SEARCH 1600 1698 1739 1781 1795 1885 1891 1892 1893 1898 1899 1901 1911 1926 1932 1933 1993 1994 2007 2032 2033 2041 2053 2062 2063 2065 2066 2072 2078 2079 2082 2084 2095 2100 2101 2102 2103 2104 2107 2116 2120 2135 2138 2154 2163 2168 2172 2189 2193 2198 2199 2205 2212 2213 2221 2227 2267 2275 2276 2295 2300 2328 2330 2332 2333 2334\r\n\
             * SEARCH 2335 2336 2337 2338 2339 2341 2342 2347 2349 2350 2358 2359 2362 2369 2371 2372 2373 2374 2375 2376 2377 2378 2379 2380 2381 2382 2383 2384 2385 2386 2390 2392 2397 2400 2401 2403 2405 2409 2411 2414 2417 2419 2420 2424 2426 2428 2439 2454 2456 2467 2468 2469 2490 2515 2519 2520 2521\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let ids = parse_id_set(lines, &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         let ids: HashSet<u32> = ids.iter().cloned().collect();
@@ -741,14 +743,14 @@ mod tests {
         );
 
         let lines = b"* SEARCH\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let ids = parse_id_set(lines, &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         let ids: HashSet<u32> = ids.iter().cloned().collect();
         assert_eq!(ids, HashSet::<u32>::new());
 
         let lines = b"* SORT\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let ids = parse_id_seq(lines, &mut send).unwrap();
         assert!(recv.try_recv().is_err());
         let ids: Vec<u32> = ids.iter().cloned().collect();
@@ -762,7 +764,7 @@ mod tests {
         // two cases the VANISHED response will be a different type than expected
         // and so goes into the unsolicited responses channel.
         let lines = b"* VANISHED 3\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let resp = parse_expunge(lines.to_vec(), &mut send).unwrap();
 
         // Should be not empty, and have no seqs
@@ -811,7 +813,7 @@ mod tests {
         // SELECT/EXAMINE (QRESYNC); UID FETCH (VANISHED); or EXPUNGE commands. In the latter
         // case, the VANISHED responses will be parsed with the response and the list of
         // expunged message is included in the returned struct.
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
 
         // Test VANISHED mixed with FETCH
         let lines = b"* VANISHED 3:5,12\r\n\
@@ -838,7 +840,7 @@ mod tests {
         // UID assigned to the appended message in the destination mailbox.
         // If the MULTIAPPEND extension is also used, there can be multiple UIDs.
         let lines = b"A003 OK [APPENDUID 38505 3955] APPEND completed\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let resp = parse_append(lines, &mut send).unwrap();
 
         assert!(recv.try_recv().is_err());
@@ -860,7 +862,7 @@ mod tests {
         // UID assigned to the appended message in the destination mailbox.
         // If the MULTIAPPEND extension is also used, there can be multiple UIDs.
         let lines = b"A003 OK [APPENDUID 38505 3955:3957] APPEND completed\r\n";
-        let (mut send, recv) = mpsc::channel();
+        let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let resp = parse_append(lines, &mut send).unwrap();
 
         assert!(recv.try_recv().is_err());

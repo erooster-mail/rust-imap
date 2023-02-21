@@ -47,7 +47,7 @@ impl Capabilities {
     /// Parse the given input into one or more [`Capabilitity`] responses.
     pub(crate) fn parse(
         owned: Vec<u8>,
-        unsolicited: &mut mpsc::Sender<UnsolicitedResponse>,
+        unsolicited: &mut mpsc::SyncSender<UnsolicitedResponse>,
     ) -> Result<Self, Error> {
         CapabilitiesTryBuilder {
             data: owned,

@@ -83,7 +83,7 @@ impl MetadataDepth {
 
 fn parse_metadata<'a>(
     mut lines: &'a [u8],
-    unsolicited: &'a mut mpsc::Sender<UnsolicitedResponse>,
+    unsolicited: &'a mut mpsc::SyncSender<UnsolicitedResponse>,
 ) -> Result<Vec<Metadata>> {
     let mut res: Vec<Metadata> = Vec::new();
     loop {
