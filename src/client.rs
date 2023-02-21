@@ -1783,14 +1783,14 @@ mod tests {
         let mut imap_stream = Client::new(mock_stream);
 
         let expected_command = format!("a1 {}", base_command);
-        let command = imap_stream.create_command(&base_command);
+        let command = imap_stream.create_command(base_command);
         assert!(
             command == expected_command,
             "expected command doesn't equal actual command"
         );
 
         let expected_command2 = format!("a2 {}", base_command);
-        let command2 = imap_stream.create_command(&base_command);
+        let command2 = imap_stream.create_command(base_command);
         assert!(
             command2 == expected_command2,
             "expected command doesn't equal actual command"
@@ -1865,7 +1865,7 @@ mod tests {
     #[test]
     fn logout() {
         let response = b"a1 OK Logout completed.\r\n".to_vec();
-        let command = format!("a1 LOGOUT\r\n");
+        let command = "a1 LOGOUT\r\n".to_string();
         let mock_stream = MockStream::new(response);
         let mut session = mock_session!(mock_stream);
         session.logout().unwrap();
@@ -1878,7 +1878,7 @@ mod tests {
     #[test]
     fn logout_with_untagged_bye() {
         let response = b"* BYE Logging out\r\na1 OK Logout completed.\r\n".to_vec();
-        let command = format!("a1 LOGOUT\r\n");
+        let command = "a1 LOGOUT\r\n".to_string();
         let mock_stream = MockStream::new(response);
         let mut session = mock_session!(mock_stream);
         session.logout().unwrap();
@@ -1891,7 +1891,7 @@ mod tests {
     #[test]
     fn logout_with_tagged_bye() {
         let response = b"a1 BYE IMAP4rev1 Server logging out\r\n".to_vec();
-        let command = format!("a1 LOGOUT\r\n");
+        let command = "a1 LOGOUT\r\n".to_string();
         let mock_stream = MockStream::new(response);
         let mut session = mock_session!(mock_stream);
         session.logout().unwrap();
@@ -2142,12 +2142,12 @@ mod tests {
         let ids = session
             .sort(&[SortCriterion::Arrival], SortCharset::Utf8, "ALL")
             .unwrap();
-        let ids: Vec<u32> = ids.iter().cloned().collect();
+        let ids: Vec<u32> = ids.to_vec();
         assert!(
             session.stream.get_ref().written_buf == b"a1 SORT (ARRIVAL) UTF-8 ALL\r\n".to_vec(),
             "Invalid sort command"
         );
-        assert_eq!(ids, [1, 2, 3, 4, 5].iter().cloned().collect::<Vec<_>>());
+        assert_eq!(ids, [1, 2, 3, 4, 5].to_vec());
     }
 
     #[test]
@@ -2166,13 +2166,13 @@ mod tests {
                 "SUBJECT",
             )
             .unwrap();
-        let ids: Vec<Uid> = ids.iter().cloned().collect();
+        let ids: Vec<Uid> = ids.to_vec();
         assert!(
             session.stream.get_ref().written_buf
                 == b"a1 UID SORT (REVERSE SIZE) US-ASCII SUBJECT\r\n".to_vec(),
             "Invalid sort command"
         );
-        assert_eq!(ids, [1, 2, 3, 4, 5].iter().cloned().collect::<Vec<_>>());
+        assert_eq!(ids, [1, 2, 3, 4, 5].to_vec());
     }
 
     #[test]
@@ -3023,7 +3023,7 @@ a1 OK completed\r
     #[test]
     fn validate_newline() {
         if let Err(ref e) = validate_str("COMMAND", "arg1", "test\nstring") {
-            if let &Error::Validate(ref ve) = e {
+            if let Error::Validate(ve) = e {
                 if ve.offending_char == '\n' {
                     return;
                 }
@@ -3037,7 +3037,7 @@ a1 OK completed\r
     #[allow(unreachable_patterns)]
     fn validate_carriage_return() {
         if let Err(ref e) = validate_str("COMMAND", "arg1", "test\rstring") {
-            if let &Error::Validate(ref ve) = e {
+            if let Error::Validate(ve) = e {
                 if ve.offending_char == '\r' {
                     return;
                 }

@@ -753,7 +753,7 @@ mod tests {
         let (mut send, recv) = mpsc::sync_channel(BUFFER_SIZE);
         let ids = parse_id_seq(lines, &mut send).unwrap();
         assert!(recv.try_recv().is_err());
-        let ids: Vec<u32> = ids.iter().cloned().collect();
+        let ids: Vec<u32> = ids.to_vec();
         assert_eq!(ids, Vec::<u32>::new());
     }
 

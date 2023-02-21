@@ -24,7 +24,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         env::var("IMAP_PASSWORD").expect("Missing or invalid env var: IMAP_PASSWORD");
     let imap_port: u16 = env::var("IMAP_PORT")
         .expect("Missing or invalid env var: IMAP_PORT")
-        .to_string()
         .parse()
         .unwrap();
 

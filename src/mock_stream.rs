@@ -1,7 +1,7 @@
 use std::cmp::min;
 use std::io::{Error, ErrorKind, Read, Result, Write};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Default)]
 pub struct MockStream {
     read_buf: Vec<u8>,
     read_pos: usize,
@@ -9,19 +9,6 @@ pub struct MockStream {
     err_on_read: bool,
     eof_on_read: bool,
     read_delay: usize,
-}
-
-impl Default for MockStream {
-    fn default() -> Self {
-        MockStream {
-            read_buf: Vec::new(),
-            read_pos: 0,
-            written_buf: Vec::new(),
-            err_on_read: false,
-            eof_on_read: false,
-            read_delay: 0,
-        }
-    }
 }
 
 impl MockStream {

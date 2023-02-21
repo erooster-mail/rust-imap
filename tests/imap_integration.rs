@@ -199,7 +199,7 @@ fn inbox() {
         .subject("My first e-mail")
         .body("Hello world from SMTP".to_string())
         .unwrap();
-    s.send(&e.into()).unwrap();
+    s.send(&e).unwrap();
 
     // send a second e-mail
     let e = lettre::message::Message::builder()
@@ -208,7 +208,7 @@ fn inbox() {
         .subject("My second e-mail")
         .body("Hello world from SMTP".to_string())
         .unwrap();
-    s.send(&e.into()).unwrap();
+    s.send(&e).unwrap();
 
     wait_for_delivery();
 
@@ -324,7 +324,7 @@ fn inbox_uid() {
         .subject("My first e-mail")
         .body("Hello world from SMTP".to_string())
         .unwrap();
-    s.send(&e.into()).unwrap();
+    s.send(&e).unwrap();
 
     wait_for_delivery();
 
@@ -405,8 +405,7 @@ fn append() {
         .to(to.parse().unwrap())
         .subject("My second e-mail")
         .body("Hello world".to_string())
-        .unwrap()
-        .into();
+        .unwrap();
 
     // connect
     let mut c = session(to);
@@ -451,8 +450,7 @@ fn append_with_flags() {
         .to(to.parse().unwrap())
         .subject("My third e-mail")
         .body("Hello world".to_string())
-        .unwrap()
-        .into();
+        .unwrap();
 
     // connect
     let mut c = session(to);
@@ -508,8 +506,7 @@ fn append_with_flags_and_date() {
         .to(to.parse().unwrap())
         .subject("My third e-mail")
         .body("Hello world".to_string())
-        .unwrap()
-        .into();
+        .unwrap();
 
     // connect
     let mut c = session(to);
@@ -659,7 +656,7 @@ fn status() {
     assert!(mb.uid_next.is_some());
     assert!(mb.uid_validity.is_some());
     assert_eq!(mb.highest_mod_seq, None);
-    assert_eq!(mb.is_read_only, false);
+    assert!(!mb.is_read_only);
 
     // If we only request one field, we should only get one field
     // back. (A server could legally send an unsolicited STATUS
@@ -730,7 +727,7 @@ fn quota() {
     use imap::types::{QuotaResourceLimit, QuotaResourceName};
 
     let greeting = get_greeting();
-    let is_greenmail = greeting.find("Cyrus").is_none();
+    let is_greenmail = !greeting.contains("Cyrus");
 
     let to = "inbox-quota@localhost";
 

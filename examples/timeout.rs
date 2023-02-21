@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let client = connect_all_timeout((server.as_str(), port), server.as_str(), &tls, timeout)?;
 
-    let mut session = client.login(&username, &password).map_err(|e| e.0)?;
+    let mut session = client.login(username, password).map_err(|e| e.0)?;
 
     // do something productive with session
 
